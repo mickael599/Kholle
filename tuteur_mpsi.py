@@ -1,4 +1,4 @@
-import hashlib
+    import hashlib
 import io
 import os
 import re
@@ -9,7 +9,7 @@ from google import genai
 from google.genai import types
 
 # ==============================================================================
-# 1. CONFIGURATION DE LA PAGE & STYLES HAUTE DÉFINITION
+# 1. CONFIGURATION DE LA PAGE & STYLES 3D IMMERSIFS (SOIN VISUEL)
 # ==============================================================================
 st.set_page_config(
     page_title="Tuteur Socratique MPSI",
@@ -21,143 +21,216 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
-    /* Global */
+    /* Palette reposante pour les yeux : Midnight Slate & Soft Indigo */
+    :root {
+        --bg-main: #0b0f19;
+        --card-bg: rgba(22, 30, 49, 0.82);
+        --accent-indigo: #6366f1;
+        --accent-cyan: #38bdf8;
+        --accent-glow: rgba(99, 102, 241, 0.22);
+        --text-pure: #f8fafc;
+        --text-soft: #cbd5e1;
+        --text-muted: #94a3b8;
+    }
+
     html, body, [class*="css"] {
         font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+        color: var(--text-soft);
     }
 
     .block-container {
-        padding-top: 1.2rem;
-        padding-bottom: 4rem;
+        padding-top: 1.4rem;
+        padding-bottom: 4.5rem;
         max-width: 820px;
     }
 
-    /* Header Hero */
-    .hero-container {
-        background: linear-gradient(135deg, rgba(30, 41, 59, 0.7) 0%, rgba(15, 23, 42, 0.9) 100%);
-        border: 1px solid rgba(99, 102, 241, 0.25);
-        border-radius: 20px;
-        padding: 1.6rem 1.4rem;
-        margin-bottom: 1.4rem;
+    /* ── Animations & Effets 3D ── */
+    @keyframes float3D {
+        0% { transform: translateY(0px) rotateX(0deg); }
+        50% { transform: translateY(-4px) rotateX(1deg); }
+        100% { transform: translateY(0px) rotateX(0deg); }
+    }
+
+    @keyframes pulseSoft {
+        0%, 100% { box-shadow: 0 0 20px 2px rgba(99, 102, 241, 0.15); }
+        50% { box-shadow: 0 0 32px 5px rgba(99, 102, 241, 0.32); }
+    }
+
+    /* ── Carte Hero 3D ── */
+    .hero-3d-wrapper {
+        perspective: 1200px;
+        margin-bottom: 1.5rem;
+    }
+
+    .hero-card {
+        background: linear-gradient(135deg, rgba(23, 32, 54, 0.9) 0%, rgba(13, 19, 33, 0.95) 100%);
+        border: 1px solid rgba(99, 102, 241, 0.3);
+        border-radius: 22px;
+        padding: 1.8rem 1.4rem;
         text-align: center;
-        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
-        backdrop-filter: blur(8px);
+        box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.65), 0 0 25px 3px var(--accent-glow);
+        backdrop-filter: blur(12px);
+        transform-style: preserve-3d;
+        transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
+        animation: float3D 6s ease-in-out infinite;
         position: relative;
         overflow: hidden;
     }
-    
-    .hero-container::before {
+
+    .hero-card:hover {
+        transform: translateY(-5px) rotateX(2deg) scale(1.01);
+        box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.75), 0 0 40px 6px rgba(99, 102, 241, 0.35);
+    }
+
+    .hero-card::after {
         content: "";
         position: absolute;
-        top: -50%;
-        left: -50%;
-        width: 200%;
-        height: 200%;
-        background: radial-gradient(circle at center, rgba(99, 102, 241, 0.08) 0%, transparent 60%);
+        top: -60%;
+        left: -60%;
+        width: 220%;
+        height: 220%;
+        background: radial-gradient(circle at 50% 30%, rgba(99, 102, 241, 0.12) 0%, transparent 60%);
         pointer-events: none;
     }
 
     .hero-badge {
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
         background: linear-gradient(90deg, #4f46e5, #7c3aed);
-        color: #f8fafc;
-        font-size: 0.72rem;
+        color: #ffffff;
+        font-size: 0.73rem;
         font-weight: 700;
         text-transform: uppercase;
         letter-spacing: 0.12em;
-        padding: 4px 14px;
+        padding: 5px 16px;
         border-radius: 9999px;
-        margin-bottom: 0.7rem;
-        box-shadow: 0 2px 10px rgba(99, 102, 241, 0.35);
+        margin-bottom: 0.8rem;
+        box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
     }
 
     .hero-title {
         color: #ffffff;
-        font-size: clamp(1.4rem, 4vw, 2.1rem);
+        font-size: clamp(1.45rem, 4.2vw, 2.2rem);
         font-weight: 800;
         margin: 0 0 0.4rem 0;
         letter-spacing: -0.03em;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.5);
     }
 
     .hero-subtitle {
         color: #94a3b8;
-        font-size: clamp(0.85rem, 2.5vw, 0.98rem);
+        font-size: clamp(0.85rem, 2.4vw, 0.98rem);
         margin: 0;
         font-weight: 400;
         line-height: 1.5;
     }
 
-    /* Statut pills */
+    /* ── Barre de statut 3D ── */
     .status-bar {
         display: flex;
         gap: 8px;
         justify-content: center;
         flex-wrap: wrap;
-        margin-top: 1rem;
+        margin-top: 1.1rem;
     }
 
     .status-pill {
-        background: rgba(15, 23, 42, 0.6);
+        background: rgba(15, 23, 42, 0.75);
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 9999px;
-        padding: 3px 12px;
-        font-size: 0.75rem;
+        padding: 4px 14px;
+        font-size: 0.76rem;
         color: #cbd5e1;
-        font-weight: 500;
+        font-weight: 600;
+        backdrop-filter: blur(6px);
+        transition: transform 0.2s ease, border-color 0.2s ease;
     }
 
-    /* LaTeX Overflow Fix */
+    .status-pill:hover {
+        transform: translateY(-2px);
+        border-color: rgba(99, 102, 241, 0.5);
+    }
+
+    /* ── Rendu Mathématique KaTeX Haute Définition ── */
+    .katex {
+        font-size: 1.09em !important;
+        color: #f1f5f9 !important;
+    }
+
     .katex-display {
+        background: rgba(15, 23, 42, 0.7) !important;
+        border: 1px solid rgba(99, 102, 241, 0.25) !important;
+        border-left: 4px solid #6366f1 !important;
+        border-radius: 12px !important;
+        padding: 0.7em 1.2em !important;
+        margin: 0.85em 0 !important;
         overflow-x: auto !important;
-        overflow-y: hidden !important;
-        padding: 0.4em 0 !important;
+        backdrop-filter: blur(8px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
     }
 
-    /* Onglets de travail */
-    .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background-color: rgba(15, 23, 42, 0.4);
-        padding: 6px;
-        border-radius: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .stTabs [data-baseweb="tab"] {
-        border-radius: 8px;
-        font-weight: 600;
-        font-size: 0.88rem;
-        padding: 8px 16px;
-        color: #94a3b8;
-        border: none !important;
-    }
-
-    .stTabs [aria-selected="true"] {
-        background-color: #4f46e5 !important;
-        color: #ffffff !important;
-    }
-
-    /* Chat Messages */
-    .stChatMessage {
-        border-radius: 16px !important;
-        border: 1px solid rgba(255, 255, 255, 0.05);
-        margin-bottom: 0.8rem;
-    }
-
-    /* Boutons tactiles */
+    /* ── Boutons Tactiles 3D avec micro-relief ── */
     div.stButton > button {
-        border-radius: 10px;
-        font-weight: 600;
-        font-size: 0.88rem;
-        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
+        border: 1px solid rgba(148, 163, 184, 0.2) !important;
+        border-bottom: 3px solid rgba(99, 102, 241, 0.6) !important;
+        border-radius: 12px !important;
+        padding: 0.65rem 1.1rem !important;
+        font-weight: 600 !important;
+        color: #e2e8f0 !important;
+        transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35) !important;
     }
 
     div.stButton > button:hover {
-        border-color: #6366f1;
-        transform: translateY(-1px);
-        box-shadow: 0 4px 14px rgba(99, 102, 241, 0.25);
+        border-color: #818cf8 !important;
+        border-bottom: 3px solid #6366f1 !important;
+        transform: translateY(-2px) scale(1.02) !important;
+        box-shadow: 0 10px 24px rgba(99, 102, 241, 0.32) !important;
+        color: #ffffff !important;
+    }
+
+    div.stButton > button:active {
+        transform: translateY(2px) scale(0.98) !important;
+        border-bottom: 1px solid #6366f1 !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5) !important;
+    }
+
+    /* ── Bulles de Chat Ergonomiques ── */
+    .stChatMessage {
+        border-radius: 18px !important;
+        border: 1px solid rgba(255, 255, 255, 0.06) !important;
+        margin-bottom: 0.9rem !important;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
+        backdrop-filter: blur(8px);
+    }
+
+    /* ── Onglets Modernes ── */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: rgba(15, 23, 42, 0.5);
+        padding: 6px;
+        border-radius: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 0.88rem;
+        padding: 8px 18px;
+        color: #94a3b8;
+        border: none !important;
+        transition: all 0.2s ease;
+    }
+
+    .stTabs [aria-selected="true"] {
+        background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%) !important;
+        color: #ffffff !important;
+        box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35) !important;
     }
     </style>
     """,
@@ -165,18 +238,18 @@ st.markdown(
 )
 
 # ==============================================================================
-# 2. NETTOYEUR LATEX (Élimination des crochets incompatibles Streamlit)
+# 2. NETTOYEUR LATEX ROBUSTE (Zéro crochet, 100% KaTeX pur)
 # ==============================================================================
 def sanitize_latex(text: str) -> str:
     r"""
     Convertit automatiquement \[ ... \] en $$ ... $$ et \( ... \) en $ ... $.
-    Empêche l'affichage disgracieux de crochets bruts sur Streamlit.
+    Nettoie les crochets bruts pour un affichage KaTeX mathématique impeccable.
     """
     if not text:
         return text
-    # Remplacer \[ ... \] par $$ ... $$
+    # Convertir \[ ... \] en $$ ... $$
     text = re.sub(r'\\\[(.*?)\\\]', r'$$\1$$', text, flags=re.DOTALL)
-    # Remplacer \( ... \) par $ ... $
+    # Convertir \( ... \) en $ ... $
     text = re.sub(r'\\\((.*?)\\\)', r'$\1$', text, flags=re.DOTALL)
     return text
 
@@ -294,7 +367,6 @@ def optimize_image(image_bytes: bytes, max_dim: int = 1600, quality: int = 85) -
 # ==============================================================================
 # 6. CONFIGURATION PÉDAGOGIQUE (REMPLACEMENT DE LA TEMPÉRATURE)
 # ==============================================================================
-# Clé active en tâche de fond (invisible pour l'utilisateur normal)
 active_api_key = get_persisted_key()
 
 with st.sidebar:
@@ -314,7 +386,6 @@ with st.sidebar:
         help="Ajuste la finesse et la précision des indices donnés.",
     )
 
-    # Réglage dynamique selon le niveau de guidage
     if help_level == "🎯 Concours Exigeant":
         temperature_val = 0.10
         guidance_instruction = (
@@ -349,7 +420,6 @@ with st.sidebar:
         stored_hash = get_admin_hash()
 
         if not stored_hash:
-            # Premier démarrage : création du mot de passe
             st.info("🔐 Aucun mot de passe défini. Créez votre code secret administrateur :")
             new_admin_pw = st.text_input("Définir un mot de passe", type="password", key="create_pw_in")
             if st.button("Enregistrer le mot de passe", use_container_width=True):
@@ -391,33 +461,40 @@ with st.sidebar:
                     st.rerun()
 
 # ==============================================================================
-# 7. PROMPT SYSTÈME SOCRATIQUE MPSI
+# 7. PROMPT SYSTÈME SOCRATIQUE MPSI (HAUTE EXIGENCE MATHÉMATIQUE & OCR)
 # ==============================================================================
 SYSTEM_PROMPT = f"""Tu es un professeur et colleur de mathématiques d'élite en classe préparatoire MPSI (Maths Sup).
-Tu es bienveillant et intraitable sur la rigueur formelle attendue aux concours (Mines-Ponts, CentraleSupélec, CCINP, X-ENS).
-
-Ton objectif est d'accompagner l'élève vers la résolution de son exercice par la méthode socratique.
+Tu es bienveillant, d'une rigueur formelle intraitable (niveau concours X-ENS, Mines-Ponts, CentraleSupélec) et extrêmement pédagogue.
 
 ### RÈGLE D'OR ABSOLUE :
 **INTERDICTION FORMELLE de donner la solution finale, d'écrire une démonstration complète ou de faire les calculs à la place de l'élève**, même s'il insiste ou dit qu'il abandonne.
 
 ### FORMATAGE STRICT LATEX (CRUCIAL) :
-- N'utilise JAMAIS les délimiteurs avec crochets ou parenthèses.
+- N'utilise JAMAIS les délimiteurs avec crochets comme \\[ ... \\] ou parenthèses \\( ... \\).
 - Utilise UNIQUEMENT le dollar simple `$ ... $` pour les expressions mathématiques dans le texte (ex: `$f(x) = x^2$`, `$\\forall \\varepsilon > 0$`).
 - Utilise le double dollar `$$ ... $$` sur des lignes dédiées pour les équations centrées.
-- N'utilise AUCUN crochet de titre comme `[Indice 1]` ou `[Astuce]`. Rédige en prose fluide ou avec des titres markdown épurés (ex: `### 💡 Indice de réflexion`).
+- N'utilise AUCUN crochet de titre comme `[Indice 1]` ou `[Astuce]`. Rédige en prose fluide ou avec des titres épurés (ex: `### 💡 Indice de réflexion`).
 
 {guidance_instruction}
 
-### EXIGENCES DE RIGUEUR MPSI :
+### LECTURE DES PHOTOS D'ÉNONCÉ ET DE BROUILLON (OCR IMPITOYABLE) :
+Quand une photo d'énoncé ou de brouillon t'est fournie :
+1. **Transcris d'abord explicitement** la question ou formule clé concernée pour prouver ta lecture parfaite (attention aux indices $n+1$ vs $n$, exposants, inégalités strictes ou larges, domaines de définition).
+2. Vérifie minutieusement chaque symbole manuscrit sur le brouillon de l'élève. Isole la première ligne exacte où se trouve l'erreur ou l'omission de rigueur.
+
+### EXIGENCES DE RIGUEUR FORMELLE MPSI :
 - Vérifie scrupuleusement l'ordre des quantificateurs ($\\forall \\varepsilon > 0, \\exists N \\in \\mathbb{{N}}$).
 - Traque la distinction stricte entre implication $\\implies$ et équivalence $\\iff$.
-- Rappelle les hypothèses des théorèmes (intervalle connexe pour le TVI, dimension finie pour le théorème du rang, sous-espace non vide $0_E \\in F$).
-- Alerte sur les divisions par zéro ou les simplifications abusives.
+- Rappelle les hypothèses exactes des théorèmes (intervalle connexe pour le TVI, continuité uniforme pour Heine, dimension finie pour le théorème du rang, sous-espace non vide $0_E \\in F$).
+- Alerte sur les divisions par zéro ou les simplifications de matrices non inversibles.
+
+### RÉPONSES AUX QUESTIONS DE L'ÉLÈVE :
+Si l'élève te pose une question générale ("C'est quoi ce symbole ?", "Pourquoi ce théorème ne s'applique pas ?", "Comment démarrer ?") :
+Réponds avec une limpidité pédagogique absolue, réexplique le concept en profondeur, mais termine TOUJOURS par une question de relance pour lui laisser la main sur son exercice.
 """
 
 # ==============================================================================
-# 8. MOTEUR D'APPEL GEMINI
+# 8. MOTEUR D'APPEL GEMINI AVEC STREAMING
 # ==============================================================================
 def ask_socratic_tutor(user_text: str, media_bytes: bytes = None, media_mime: str = None) -> bool:
     """Envoie la requête à Gemini avec streaming et assainissement LaTeX."""
@@ -476,14 +553,16 @@ def ask_socratic_tutor(user_text: str, media_bytes: bytes = None, media_mime: st
 # ==============================================================================
 st.markdown(
     """
-    <div class="hero-container">
-        <span class="hero-badge">🏛️ Khôlle de Mathématiques • MPSI</span>
-        <h1 class="hero-title">Tuteur Socratique d'Excellence</h1>
-        <p class="hero-subtitle">Guidage pas à pas, vérification impitoyable de la rigueur et zéro spoiler.</p>
-        <div class="status-bar">
-            <span class="status-pill">⚡ Modèle : """ + model_name + """</span>
-            <span class="status-pill">🎯 Mode : """ + help_level + """</span>
-            <span class="status-pill">📐 Rendu : LaTeX KaTeX</span>
+    <div class="hero-3d-wrapper">
+        <div class="hero-card">
+            <span class="hero-badge">🏛️ Khôlle de Mathématiques • MPSI</span>
+            <h1 class="hero-title">Tuteur Socratique d'Excellence</h1>
+            <p class="hero-subtitle">Guidage pas à pas, analyse visuelle de tes brouillons et rigueur de concours.</p>
+            <div class="status-bar">
+                <span class="status-pill">⚡ Modèle : """ + model_name + """</span>
+                <span class="status-pill">🎯 Mode : """ + help_level + """</span>
+                <span class="status-pill">📐 Rendu : KaTeX HD</span>
+            </div>
         </div>
     </div>
     """,
@@ -501,7 +580,7 @@ tab_enonce, tab_brouillon, tab_aide = st.tabs([
 
 with tab_enonce:
     if not has_exercise:
-        st.info("👋 **Bienvenue en colle !** Charge la photo ou le PDF de ton énoncé pour démarrer.")
+        st.info("👋 **Bienvenue en colle !** Charge la photo ou le PDF de ton exercice pour démarrer.")
     else:
         st.success("✅ **Énoncé chargé et analysé.** Tu peux le remplacer à tout moment ci-dessous.")
 
@@ -551,8 +630,10 @@ with tab_enonce:
 
                 init_prompt = (
                     "Voici l'énoncé de mon exercice de mathématiques de MPSI. "
-                    "Analyse-le, identifie le chapitre du programme et pose-moi "
-                    "uniquement une première question d'orientation subtile pour me lancer."
+                    "Consignes d'analyse :\n"
+                    "1. TRANSCRIPTION PRÉCISE : Identifie et retranscris textuellement l'énoncé de la première question à traiter pour confirmer la lecture exacte de chaque formule, indice et symbole.\n"
+                    "2. THÈME : Précise le chapitre du programme de MPSI.\n"
+                    "3. ORIENTATION : Pose-moi uniquement une première question d'orientation subtile ou rappelle-moi la définition clé pour m'aider à démarrer sans me donner la solution."
                 )
                 st.session_state.messages.append(
                     {"role": "user", "content": "📄 *[Énoncé de l'exercice soumis au colleur]*"}
@@ -595,7 +676,7 @@ with tab_brouillon:
                     opt_draft = optimize_image(brouillon_raw)
                     draft_prompt = (
                         "Voici la photo de mon brouillon et de mes calculs manuscrits pour cet exercice. "
-                        "Analyse ma tentative, dis-moi ce qui est rigoureux, pointe précisément la ligne "
+                        "Analyse très attentivement mes écritures : dis-moi ce qui est rigoureux, pointe précisément la ligne "
                         "ou l'argument qui pose problème, et pose-moi une question pour m'aider à rectifier."
                     )
                     st.session_state.messages.append(
@@ -614,7 +695,8 @@ with tab_aide:
         ### 🎯 Les Règles d'or de la Khôlle MPSI
         1. **Pas de solution toute cuite** : Le colleur ne te donnera jamais la réponse directe, son rôle est d'entraîner tes réflexes de concours.
         2. **Rigueur formelle** : Attention aux quantificateurs, aux ensembles de définition et aux hypothèses des théorèmes (continuité, dimension finie, etc.).
-        3. **Utilise les boutons d'action** : En bas du chat, clique sur les boutons pour demander un indice ciblé ou un rappel de cours.
+        3. **Pose toutes tes questions** : N'hésite pas à demander des précisions sur une définition ou sur ce qu'attend l'énoncé.
+        4. **Utilise les boutons d'action** : En bas du chat, clique sur les boutons pour demander un indice ciblé ou un rappel de cours.
         """
     )
 
@@ -645,7 +727,8 @@ if has_exercise and len(st.session_state.messages) > 0:
         if st.button("🏆 J'ai trouvé la solution !", use_container_width=True):
             quick_prompt = "Je pense avoir abouti ! Peux-tu valider le résultat final et me résumer l'astuce de khôlle à retenir ?"
 
-user_text = st.chat_input("Propose une piste, pose une question ou réponds au colleur...")
+# Zone de saisie libre : l'élève peut poser n'importe quelle question à tout moment
+user_text = st.chat_input("Pose une question sur l'énoncé, propose une piste ou réponds au colleur...")
 final_prompt = quick_prompt or user_text
 
 if final_prompt:
