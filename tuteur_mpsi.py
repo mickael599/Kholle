@@ -9,10 +9,10 @@ from google import genai
 from google.genai import types
 
 # ==============================================================================
-# 1. CONFIGURATION DE LA PAGE & STYLES 3D IMMERSIFS (SOIN VISUEL)
+# 1. CONFIGURATION DE LA PAGE & DESIGN 3D HYPER-IMMERSIPH
 # ==============================================================================
 st.set_page_config(
-    page_title="Tuteur Socratique MPSI",
+    page_title="Khôlle MPSI - Tuteur Socratique",
     page_icon="🎓",
     layout="centered",
     initial_sidebar_state="collapsed",
@@ -23,214 +23,197 @@ st.markdown(
     <style>
     @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
-    /* Palette reposante pour les yeux : Midnight Slate & Soft Indigo */
-    :root {
-        --bg-main: #0b0f19;
-        --card-bg: rgba(22, 30, 49, 0.82);
-        --accent-indigo: #6366f1;
-        --accent-cyan: #38bdf8;
-        --accent-glow: rgba(99, 102, 241, 0.22);
-        --text-pure: #f8fafc;
-        --text-soft: #cbd5e1;
-        --text-muted: #94a3b8;
-    }
-
-    html, body, [class*="css"] {
-        font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-        color: var(--text-soft);
+    /* ── FOND GLOBAL DE L'APPLICATION (Deep Cosmos Indigo) ── */
+    .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+        background: radial-gradient(circle at 50% 12%, #1e1b4b 0%, #0b0f19 45%, #050811 100%) !important;
+        background-attachment: fixed !important;
+        color: #e2e8f0 !important;
+        font-family: 'Plus Jakarta Sans', sans-serif !important;
     }
 
     .block-container {
-        padding-top: 1.4rem;
-        padding-bottom: 4.5rem;
-        max-width: 820px;
+        padding-top: 1.5rem !important;
+        padding-bottom: 5rem !important;
+        max-width: 820px !important;
     }
 
-    /* ── Animations & Effets 3D ── */
-    @keyframes float3D {
-        0% { transform: translateY(0px) rotateX(0deg); }
-        50% { transform: translateY(-4px) rotateX(1deg); }
-        100% { transform: translateY(0px) rotateX(0deg); }
+    /* ── BARRE LATÉRALE GLASSMORPHISM ── */
+    [data-testid="stSidebar"] {
+        background: rgba(11, 15, 25, 0.96) !important;
+        border-right: 1px solid rgba(99, 102, 241, 0.25) !important;
+        backdrop-filter: blur(14px) !important;
     }
 
-    @keyframes pulseSoft {
-        0%, 100% { box-shadow: 0 0 20px 2px rgba(99, 102, 241, 0.15); }
-        50% { box-shadow: 0 0 32px 5px rgba(99, 102, 241, 0.32); }
-    }
-
-    /* ── Carte Hero 3D ── */
-    .hero-3d-wrapper {
+    /* ── CARTE HERO 3D FLOTTANTE ── */
+    .hero-3d-box {
         perspective: 1200px;
-        margin-bottom: 1.5rem;
+        margin-bottom: 1.6rem;
     }
 
-    .hero-card {
-        background: linear-gradient(135deg, rgba(23, 32, 54, 0.9) 0%, rgba(13, 19, 33, 0.95) 100%);
-        border: 1px solid rgba(99, 102, 241, 0.3);
-        border-radius: 22px;
-        padding: 1.8rem 1.4rem;
+    .hero-3d-card {
+        background: linear-gradient(135deg, rgba(30, 41, 69, 0.85) 0%, rgba(15, 23, 42, 0.95) 100%);
+        border: 1px solid rgba(129, 140, 248, 0.35);
+        border-radius: 24px;
+        padding: 2rem 1.6rem;
         text-align: center;
-        box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.65), 0 0 25px 3px var(--accent-glow);
-        backdrop-filter: blur(12px);
+        box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8), 0 0 35px 2px rgba(99, 102, 241, 0.28);
+        backdrop-filter: blur(16px);
         transform-style: preserve-3d;
         transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.4s ease;
-        animation: float3D 6s ease-in-out infinite;
         position: relative;
         overflow: hidden;
     }
 
-    .hero-card:hover {
-        transform: translateY(-5px) rotateX(2deg) scale(1.01);
-        box-shadow: 0 30px 60px -12px rgba(0, 0, 0, 0.75), 0 0 40px 6px rgba(99, 102, 241, 0.35);
+    .hero-3d-card:hover {
+        transform: translateY(-6px) rotateX(2deg) scale(1.01);
+        box-shadow: 0 32px 65px -15px rgba(0, 0, 0, 0.9), 0 0 45px 6px rgba(99, 102, 241, 0.4);
     }
 
-    .hero-card::after {
-        content: "";
-        position: absolute;
-        top: -60%;
-        left: -60%;
-        width: 220%;
-        height: 220%;
-        background: radial-gradient(circle at 50% 30%, rgba(99, 102, 241, 0.12) 0%, transparent 60%);
-        pointer-events: none;
-    }
-
-    .hero-badge {
+    .hero-3d-badge {
         display: inline-flex;
         align-items: center;
         gap: 6px;
         background: linear-gradient(90deg, #4f46e5, #7c3aed);
         color: #ffffff;
-        font-size: 0.73rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.12em;
-        padding: 5px 16px;
-        border-radius: 9999px;
-        margin-bottom: 0.8rem;
-        box-shadow: 0 4px 14px rgba(79, 70, 229, 0.4);
-    }
-
-    .hero-title {
-        color: #ffffff;
-        font-size: clamp(1.45rem, 4.2vw, 2.2rem);
+        font-size: 0.75rem;
         font-weight: 800;
-        margin: 0 0 0.4rem 0;
-        letter-spacing: -0.03em;
-        text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+        text-transform: uppercase;
+        letter-spacing: 0.14em;
+        padding: 6px 18px;
+        border-radius: 9999px;
+        margin-bottom: 0.9rem;
+        box-shadow: 0 4px 18px rgba(79, 70, 229, 0.5);
     }
 
-    .hero-subtitle {
-        color: #94a3b8;
-        font-size: clamp(0.85rem, 2.4vw, 0.98rem);
-        margin: 0;
-        font-weight: 400;
+    .hero-3d-title {
+        color: #ffffff !important;
+        font-size: clamp(1.5rem, 4.5vw, 2.3rem) !important;
+        font-weight: 800 !important;
+        margin: 0 0 0.5rem 0 !important;
+        letter-spacing: -0.03em !important;
+        text-shadow: 0 3px 14px rgba(0,0,0,0.6);
+    }
+
+    .hero-3d-subtitle {
+        color: #94a3b8 !important;
+        font-size: clamp(0.88rem, 2.4vw, 1.02rem) !important;
+        margin: 0 0 1.2rem 0 !important;
         line-height: 1.5;
     }
 
-    /* ── Barre de statut 3D ── */
-    .status-bar {
+    .hero-status-pills {
         display: flex;
         gap: 8px;
         justify-content: center;
         flex-wrap: wrap;
-        margin-top: 1.1rem;
     }
 
-    .status-pill {
-        background: rgba(15, 23, 42, 0.75);
-        border: 1px solid rgba(255, 255, 255, 0.08);
+    .hero-pill {
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 9999px;
-        padding: 4px 14px;
-        font-size: 0.76rem;
+        padding: 5px 15px;
+        font-size: 0.78rem;
         color: #cbd5e1;
         font-weight: 600;
-        backdrop-filter: blur(6px);
-        transition: transform 0.2s ease, border-color 0.2s ease;
-    }
-
-    .status-pill:hover {
-        transform: translateY(-2px);
-        border-color: rgba(99, 102, 241, 0.5);
-    }
-
-    /* ── Rendu Mathématique KaTeX Haute Définition ── */
-    .katex {
-        font-size: 1.09em !important;
-        color: #f1f5f9 !important;
-    }
-
-    .katex-display {
-        background: rgba(15, 23, 42, 0.7) !important;
-        border: 1px solid rgba(99, 102, 241, 0.25) !important;
-        border-left: 4px solid #6366f1 !important;
-        border-radius: 12px !important;
-        padding: 0.7em 1.2em !important;
-        margin: 0.85em 0 !important;
-        overflow-x: auto !important;
         backdrop-filter: blur(8px);
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
     }
 
-    /* ── Boutons Tactiles 3D avec micro-relief ── */
+    /* ── BULLES DE CHAT 3D AVEC RELIEF ── */
+    [data-testid="stChatMessage"] {
+        background: linear-gradient(135deg, rgba(26, 34, 56, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%) !important;
+        border: 1px solid rgba(99, 102, 241, 0.25) !important;
+        border-radius: 20px !important;
+        box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.6), 0 0 20px rgba(99, 102, 241, 0.12) !important;
+        margin-bottom: 1.1rem !important;
+        backdrop-filter: blur(10px) !important;
+        transition: transform 0.25s ease !important;
+    }
+
+    [data-testid="stChatMessage"]:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.7), 0 0 25px rgba(99, 102, 241, 0.22) !important;
+    }
+
+    /* ── BOUTONS 3D PHYSIQUES AVEC RELIEF ET PRESSION ── */
     div.stButton > button {
-        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
-        border: 1px solid rgba(148, 163, 184, 0.2) !important;
-        border-bottom: 3px solid rgba(99, 102, 241, 0.6) !important;
-        border-radius: 12px !important;
-        padding: 0.65rem 1.1rem !important;
-        font-weight: 600 !important;
-        color: #e2e8f0 !important;
-        transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35) !important;
+        background: linear-gradient(180deg, #312e81 0%, #1e1b4b 100%) !important;
+        color: #ffffff !important;
+        border: 1px solid #4f46e5 !important;
+        border-bottom: 4px solid #3730a3 !important;
+        border-radius: 14px !important;
+        padding: 0.75rem 1.25rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.02em !important;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4), 0 0 18px rgba(79, 70, 229, 0.3) !important;
+        transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1) !important;
     }
 
     div.stButton > button:hover {
-        border-color: #818cf8 !important;
-        border-bottom: 3px solid #6366f1 !important;
-        transform: translateY(-2px) scale(1.02) !important;
-        box-shadow: 0 10px 24px rgba(99, 102, 241, 0.32) !important;
-        color: #ffffff !important;
+        background: linear-gradient(180deg, #3730a3 0%, #312e81 100%) !important;
+        border-color: #6366f1 !important;
+        border-bottom: 4px solid #4338ca !important;
+        transform: translateY(-2px) !important;
+        box-shadow: 0 10px 24px rgba(79, 70, 229, 0.45) !important;
     }
 
     div.stButton > button:active {
-        transform: translateY(2px) scale(0.98) !important;
-        border-bottom: 1px solid #6366f1 !important;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5) !important;
+        transform: translateY(3px) !important;
+        border-bottom: 1px solid #4338ca !important;
+        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6) !important;
     }
 
-    /* ── Bulles de Chat Ergonomiques ── */
-    .stChatMessage {
-        border-radius: 18px !important;
-        border: 1px solid rgba(255, 255, 255, 0.06) !important;
-        margin-bottom: 0.9rem !important;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2) !important;
-        backdrop-filter: blur(8px);
+    /* ── RENDU MATHÉMATIQUE KATEX HAUTE DÉFINITION ── */
+    .katex {
+        font-size: 1.1em !important;
+        color: #f8fafc !important;
     }
 
-    /* ── Onglets Modernes ── */
+    .katex-display {
+        background: rgba(15, 23, 42, 0.85) !important;
+        border: 1px solid rgba(99, 102, 241, 0.3) !important;
+        border-left: 4px solid #6366f1 !important;
+        border-radius: 14px !important;
+        padding: 0.8em 1.3em !important;
+        margin: 0.9em 0 !important;
+        overflow-x: auto !important;
+        backdrop-filter: blur(10px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35) !important;
+    }
+
+    /* ── ONGLETS 3D HAUTE DÉFINITION ── */
     .stTabs [data-baseweb="tab-list"] {
-        gap: 8px;
-        background-color: rgba(15, 23, 42, 0.5);
-        padding: 6px;
-        border-radius: 14px;
-        border: 1px solid rgba(255, 255, 255, 0.06);
+        gap: 10px !important;
+        background-color: rgba(15, 23, 42, 0.6) !important;
+        padding: 8px !important;
+        border-radius: 16px !important;
+        border: 1px solid rgba(255, 255, 255, 0.08) !important;
     }
 
     .stTabs [data-baseweb="tab"] {
-        border-radius: 10px;
-        font-weight: 600;
-        font-size: 0.88rem;
-        padding: 8px 18px;
-        color: #94a3b8;
+        border-radius: 12px !important;
+        font-weight: 700 !important;
+        font-size: 0.92rem !important;
+        padding: 9px 20px !important;
+        color: #94a3b8 !important;
         border: none !important;
-        transition: all 0.2s ease;
+        transition: all 0.2s ease !important;
     }
 
     .stTabs [aria-selected="true"] {
         background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%) !important;
         color: #ffffff !important;
-        box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35) !important;
+        box-shadow: 0 6px 20px rgba(79, 70, 229, 0.45) !important;
+    }
+
+    /* ── ZONE DE SAISIE DE CHAT EN BAS ── */
+    [data-testid="stChatInput"] {
+        border-radius: 18px !important;
+        border: 1px solid rgba(99, 102, 241, 0.3) !important;
+        background: rgba(15, 23, 42, 0.9) !important;
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5) !important;
+        backdrop-filter: blur(12px) !important;
     }
     </style>
     """,
@@ -247,9 +230,7 @@ def sanitize_latex(text: str) -> str:
     """
     if not text:
         return text
-    # Convertir \[ ... \] en $$ ... $$
     text = re.sub(r'\\\[(.*?)\\\]', r'$$\1$$', text, flags=re.DOTALL)
-    # Convertir \( ... \) en $ ... $
     text = re.sub(r'\\\((.*?)\\\)', r'$\1$', text, flags=re.DOTALL)
     return text
 
@@ -263,12 +244,10 @@ PASSWORD_HASH_PATH = BASE_DIR / "ADMIN_PASSWORD.hash"
 
 def get_persisted_key() -> str:
     """Charge la clé API depuis secrets.toml, CLE_API.txt ou variable d'environnement."""
-    # 1. Variables d'environnement
     key = os.environ.get("GEMINI_API_KEY", "").strip()
     if key:
         return key
 
-    # 2. CLE_API.txt
     if KEY_FILE_PATH.exists():
         try:
             content = KEY_FILE_PATH.read_text(encoding="utf-8").strip()
@@ -278,7 +257,6 @@ def get_persisted_key() -> str:
         except Exception:
             pass
 
-    # 3. secrets.toml
     try:
         sec = st.secrets.get("GEMINI_API_KEY", "").strip()
         if sec:
@@ -354,7 +332,7 @@ def optimize_image(image_bytes: bytes, max_dim: int = 1600, quality: int = 85) -
     """Corrige l'orientation EXIF smartphone et compresse l'image pour l'API."""
     try:
         img = Image.open(io.BytesIO(image_bytes))
-        img = ImageOps.exif_transpose(img)  # Empêche la rotation 90° smartphone
+        img = ImageOps.exif_transpose(img)
         img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
         if img.mode in ("RGBA", "P"):
             img = img.convert("RGB")
@@ -365,7 +343,7 @@ def optimize_image(image_bytes: bytes, max_dim: int = 1600, quality: int = 85) -
         return image_bytes
 
 # ==============================================================================
-# 6. CONFIGURATION PÉDAGOGIQUE (REMPLACEMENT DE LA TEMPÉRATURE)
+# 6. CONFIGURATION PÉDAGOGIQUE
 # ==============================================================================
 active_api_key = get_persisted_key()
 
@@ -374,9 +352,9 @@ with st.sidebar:
 
     model_name = st.selectbox(
         "Modèle IA",
-        options=["gemini-2.0-flash", "gemini-1.5-pro", "gemini-1.5-flash"],
+        options=["gemini-3.8-flash", "gemini-3.8-pro", "gemini-2.5-flash"],
         index=0,
-        help="gemini-2.0-flash est ultra-rapide et gratuit. gemini-1.5-pro est conseillé pour l'algèbre abstraite et l'analyse fine.",
+        help="gemini-3.8-flash est le modèle officiel de dernière génération recommandé par Google pour une vitesse et une vision optimales.",
     )
 
     help_level = st.select_slider(
@@ -412,15 +390,13 @@ with st.sidebar:
         reset_session()
         st.rerun()
 
-    # ──────────────────────────────────────────────────────────────
-    # ZONE ADMIN SÉCURISÉE (VERROUILLÉE PAR MOT DE PASSE)
-    # ──────────────────────────────────────────────────────────────
+    # Zone Admin protégée par mot de passe
     st.markdown("<br><br>", unsafe_allow_html=True)
     with st.expander("🔒 Administration & Clé API"):
         stored_hash = get_admin_hash()
 
         if not stored_hash:
-            st.info("🔐 Aucun mot de passe défini. Créez votre code secret administrateur :")
+            st.info("🔐 Créez votre mot de passe secret administrateur :")
             new_admin_pw = st.text_input("Définir un mot de passe", type="password", key="create_pw_in")
             if st.button("Enregistrer le mot de passe", use_container_width=True):
                 if len(new_admin_pw) >= 4:
@@ -549,19 +525,19 @@ def ask_socratic_tutor(user_text: str, media_bytes: bytes = None, media_mime: st
             return False
 
 # ==============================================================================
-# 9. INTERFACE PRINCIPALE HERO & ONGLETS
+# 9. INTERFACE HERO 3D & ONGLETS
 # ==============================================================================
 st.markdown(
     """
-    <div class="hero-3d-wrapper">
-        <div class="hero-card">
-            <span class="hero-badge">🏛️ Khôlle de Mathématiques • MPSI</span>
-            <h1 class="hero-title">Tuteur Socratique d'Excellence</h1>
-            <p class="hero-subtitle">Guidage pas à pas, analyse visuelle de tes brouillons et rigueur de concours.</p>
-            <div class="status-bar">
-                <span class="status-pill">⚡ Modèle : """ + model_name + """</span>
-                <span class="status-pill">🎯 Mode : """ + help_level + """</span>
-                <span class="status-pill">📐 Rendu : KaTeX HD</span>
+    <div class="hero-3d-box">
+        <div class="hero-3d-card">
+            <span class="hero-3d-badge">🏛️ KHÔLLE VIRTUELLE MPSI • MATHS SUP</span>
+            <h1 class="hero-3d-title">Tuteur Socratique d'Excellence</h1>
+            <p class="hero-3d-subtitle">Résous tes exercices pas à pas avec ton colleur IA • Rigueur absolue des concours</p>
+            <div class="hero-status-pills">
+                <span class="hero-pill">⚡ Modèle : """ + model_name + """</span>
+                <span class="hero-pill">🎯 Mode : """ + help_level + """</span>
+                <span class="hero-pill">📐 Rendu : KaTeX Haute Définition</span>
             </div>
         </div>
     </div>
@@ -571,7 +547,7 @@ st.markdown(
 
 has_exercise = st.session_state.exercise_hash is not None
 
-# Onglets modernes pour organiser le travail
+# Onglets 3D pour organiser le travail
 tab_enonce, tab_brouillon, tab_aide = st.tabs([
     "📸 1. Énoncé de l'exercice",
     "📝 2. Brouillon manuscrit",
@@ -582,7 +558,7 @@ with tab_enonce:
     if not has_exercise:
         st.info("👋 **Bienvenue en colle !** Charge la photo ou le PDF de ton exercice pour démarrer.")
     else:
-        st.success("✅ **Énoncé chargé et analysé.** Tu peux le remplacer à tout moment ci-dessous.")
+        st.success("✅ **Énoncé en cours d'analyse.** Tu peux le remplacer à tout moment ci-dessous.")
 
     mode_import = st.radio(
         "Source de l'énoncé :",
@@ -696,7 +672,7 @@ with tab_aide:
         1. **Pas de solution toute cuite** : Le colleur ne te donnera jamais la réponse directe, son rôle est d'entraîner tes réflexes de concours.
         2. **Rigueur formelle** : Attention aux quantificateurs, aux ensembles de définition et aux hypothèses des théorèmes (continuité, dimension finie, etc.).
         3. **Pose toutes tes questions** : N'hésite pas à demander des précisions sur une définition ou sur ce qu'attend l'énoncé.
-        4. **Utilise les boutons d'action** : En bas du chat, clique sur les boutons pour demander un indice ciblé ou un rappel de cours.
+        4. **Utilise les boutons tactiles** : En bas du chat, clique sur les boutons 3D pour demander un indice ciblé ou un rappel de cours.
         """
     )
 
@@ -727,7 +703,7 @@ if has_exercise and len(st.session_state.messages) > 0:
         if st.button("🏆 J'ai trouvé la solution !", use_container_width=True):
             quick_prompt = "Je pense avoir abouti ! Peux-tu valider le résultat final et me résumer l'astuce de khôlle à retenir ?"
 
-# Zone de saisie libre : l'élève peut poser n'importe quelle question à tout moment
+# Barre de saisie libre
 user_text = st.chat_input("Pose une question sur l'énoncé, propose une piste ou réponds au colleur...")
 final_prompt = quick_prompt or user_text
 
