@@ -1,0 +1,18 @@
+# Clés API et secrets sensibles (JAMAIS publiés sur GitHub)
+CLE_API.txt
+.streamlit/secrets.toml
+ADMIN_PASSWORD.hash
+*.env
+
+# Environnement virtuel Python
+.venv/
+venv/
+ENV/
+
+# Caches et fichiers temporaires
+__pycache__/
+*.py[cod]
+*$py.class
+*.log
+.DS_Store
+Thumbs.db
