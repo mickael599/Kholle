@@ -328,12 +328,12 @@ def reset_session():
 # ==============================================================================
 # 5. OPTIMISATION IMAGES SMARTPHONE (EXIF & COMPRESSION)
 # ==============================================================================
-def optimize_image(image_bytes: bytes, max_dim: int = 1600, quality: int = 85) -> bytes:
-    """Corrige l'orientation EXIF smartphone et compresse l'image pour l'API."""
+def optimize_image(image_bytes: bytes, max_dim: int = 1200, quality: int = 80) -> bytes:
+    """Corrige l'orientation EXIF smartphone et compresse ultra-rapidement l'image."""
     try:
         img = Image.open(io.BytesIO(image_bytes))
         img = ImageOps.exif_transpose(img)
-        img.thumbnail((max_dim, max_dim), Image.Resampling.LANCZOS)
+        img.thumbnail((max_dim, max_dim), Image.Resampling.BILINEAR)
         if img.mode in ("RGBA", "P"):
             img = img.convert("RGB")
         buf = io.BytesIO()
@@ -352,9 +352,9 @@ with st.sidebar:
 
     model_name = st.selectbox(
         "Modèle IA",
-        options=["gemini-3.8-flash", "gemini-3.8-pro", "gemini-2.5-flash"],
+        options=["gemini-3.8-flash", "gemini-2.5-flash", "gemini-3.8-pro", "gemini-1.5-flash"],
         index=0,
-        help="gemini-3.8-flash est le modèle officiel de dernière génération recommandé par Google pour une vitesse et une vision optimales.",
+        help="gemini-3.8-flash est le modèle de pointe. Si Google subit un pic temporaire de trafic (503), l'application bascule automatiquement sur un modèle de secours.",
     )
 
     help_level = st.select_slider(
@@ -363,6 +363,15 @@ with st.sidebar:
         value="⚖️ Équilibré MPSI",
         help="Ajuste la finesse et la précision des indices donnés.",
     )
+
+    speed_mode = st.radio(
+        "Vitesse du colleur",
+        options=["⚡ Turbo (Réponse immédiate)", "🧠 Réflexion longue"],
+        horizontal=True,
+        index=0,
+        help="En mode Turbo, l'IA supprime la cogitation interne pour vous répondre en 1 à 2 secondes.",
+    )
+    thinking_budget_val = 0 if speed_mode.startswith("⚡ Turbo") else 1024
 
     if help_level == "🎯 Concours Exigeant":
         temperature_val = 0.10
@@ -489,40 +498,74 @@ def ask_socratic_tutor(user_text: str, media_bytes: bytes = None, media_mime: st
         types.Content(role="user", parts=parts)
     )
 
+    # Liste ordonnée de modèles de secours en cas de pic de charge 503 chez Google
+    models_to_try = [model_name]
+    for alt in ["gemini-2.5-flash", "gemini-3.8-flash", "gemini-1.5-flash", "gemini-3.8-pro"]:
+        if alt not in models_to_try:
+            models_to_try.append(alt)
+
     with st.chat_message("assistant", avatar="👨‍🏫"):
         placeholder = st.empty()
+        placeholder.markdown("⏳ *Le colleur analyse ta photo et formule ton indice...*")
         full_response = ""
-        try:
-            response_stream = client.models.generate_content_stream(
-                model=model_name,
-                contents=st.session_state.api_contents,
-                config=types.GenerateContentConfig(
-                    system_instruction=SYSTEM_PROMPT,
-                    temperature=temperature_val,
-                ),
-            )
-            for chunk in response_stream:
-                if chunk.text:
-                    full_response += chunk.text
-                    clean_live = sanitize_latex(full_response)
-                    placeholder.markdown(clean_live + " ▌")
+        success = False
+        last_error = None
 
-            clean_final = sanitize_latex(full_response)
-            placeholder.markdown(clean_final)
+        for current_model in models_to_try:
+            try:
+                if current_model != model_name:
+                    placeholder.markdown(f"⏳ *Pic de trafic sur {model_name}, bascule automatique vers {current_model}...*")
 
-            st.session_state.messages.append({"role": "assistant", "content": clean_final})
-            st.session_state.api_contents.append(
-                types.Content(
-                    role="model",
-                    parts=[types.Part.from_text(text=clean_final)],
+                config_params = {
+                    "system_instruction": SYSTEM_PROMPT,
+                    "temperature": temperature_val,
+                }
+                try:
+                    config_params["thinking_config"] = types.ThinkingConfig(thinking_budget=thinking_budget_val)
+                except Exception:
+                    pass
+
+                response_stream = client.models.generate_content_stream(
+                    model=current_model,
+                    contents=st.session_state.api_contents,
+                    config=types.GenerateContentConfig(**config_params),
                 )
-            )
-            return True
-        except Exception as e:
+                for chunk in response_stream:
+                    if chunk.text:
+                        full_response += chunk.text
+                        clean_live = sanitize_latex(full_response)
+                        placeholder.markdown(clean_live + " ▌")
+
+                clean_final = sanitize_latex(full_response)
+                placeholder.markdown(clean_final)
+
+                st.session_state.messages.append({"role": "assistant", "content": clean_final})
+                st.session_state.api_contents.append(
+                    types.Content(
+                        role="model",
+                        parts=[types.Part.from_text(text=clean_final)],
+                    )
+                )
+                success = True
+                break
+            except Exception as e:
+                err_str = str(e)
+                last_error = e
+                # En cas de surcharge temporaire chez Google (503 ou 429), on tente immédiatement le modèle suivant !
+                if "503" in err_str or "UNAVAILABLE" in err_str or "429" in err_str or "high demand" in err_str:
+                    import time
+                    time.sleep(1)
+                    continue
+                else:
+                    break
+
+        if not success:
             if st.session_state.api_contents:
                 st.session_state.api_contents.pop()
-            st.error(f"Erreur de communication : {e}")
+            st.error(f"Erreur de communication : {last_error}")
             return False
+
+        return True
 
 # ==============================================================================
 # 9. INTERFACE HERO 3D & ONGLETS
@@ -614,8 +657,9 @@ with tab_enonce:
                 st.session_state.messages.append(
                     {"role": "user", "content": "📄 *[Énoncé de l'exercice soumis au colleur]*"}
                 )
-                if ask_socratic_tutor(init_prompt, media_bytes=processed_data, media_mime=processed_mime):
-                    st.rerun()
+                with st.spinner("⚡ Analyse rapide de l'énoncé en cours..."):
+                    if ask_socratic_tutor(init_prompt, media_bytes=processed_data, media_mime=processed_mime):
+                        st.rerun()
 
     if st.session_state.exercise_bytes is not None:
         if st.session_state.exercise_mime.startswith("image/"):
@@ -662,8 +706,9 @@ with tab_brouillon:
                         st.markdown("📝 *[Photo de mes calculs manuscrits]*")
                         st.image(Image.open(io.BytesIO(opt_draft)), caption="Mon brouillon manuscrit", width=300)
 
-                    if ask_socratic_tutor(draft_prompt, media_bytes=opt_draft, media_mime="image/jpeg"):
-                        st.rerun()
+                    with st.spinner("⚡ Analyse rapide de ton brouillon en cours..."):
+                        if ask_socratic_tutor(draft_prompt, media_bytes=opt_draft, media_mime="image/jpeg"):
+                            st.rerun()
 
 with tab_aide:
     st.markdown(
